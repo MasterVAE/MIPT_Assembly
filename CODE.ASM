@@ -58,16 +58,20 @@ print proc
 	mov di, STRING_LENGHT_POS
 	mov bl, [di]
 	add bl, 3h		;scale x
-
+	mov bh, 5h		;scale y
 
 	mov ax, SYMB1	;symb
 
-	mov ah, 7h		;changed color
-
-	mov bh, 5h		;scale y
+	xor cx, cx		;changed color
+	mov cl, [di]
+	add di, cx			
+	mov dl, [di]
+	sub dl, '0'
+	mov ah, dl
 
 	push ax
 	push bx
+
 
 	xor ax, ax
 	mov al, bl
