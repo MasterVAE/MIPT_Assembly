@@ -4,6 +4,15 @@
 VRAMSEG EQU 0b800h
 EXITCODE EQU 4c00h
 
+WIDTH EQU 80d
+
+SYMB1 EQU 00DBh
+SYMB2 EQU 03DBh
+
+RECT1_POS EQU 0Ah
+RECT2_POS EQU 0Bh
+TEXT_POS EQU 0Ch
+
 STRING_LENGHT_POS EQU 80h
 STRING_START EQU 82h
 
@@ -48,23 +57,27 @@ print proc
 
 	mov di, STRING_LENGHT_POS
 	mov bl, [di]
-	add bl, 5h		;scale x
+	add bl, 3h		;scale x
 
-	mov ax, 0ADBh	;symb
-	mov bh, 05h		;scale y
+
+	mov ax, SYMB1	;symb
+
+	mov ah, 7h		;changed color
+
+	mov bh, 5h		;scale y
 
 	push ax
 	push bx
 
 	xor ax, ax
 	mov al, bl
-	mov bl, 2h
-	div bl
+	shr ax, 1h
 
-	mov ch, 40d 		;pos x
+	mov ch, WIDTH 		;pos x
+	shr ch, 1h
 	sub ch, al
 
-	mov cl, 0Ah		;pos y
+	mov cl, RECT1_POS		;pos y
 
 	pop bx
 	pop ax
@@ -74,23 +87,23 @@ print proc
 
 	mov di, STRING_LENGHT_POS
 	mov bl, [di]
-	inc bl			;scale x
+	dec bl			;scale x
 
-	mov ax, 03DBh	;symb
-	mov bh, 03h		;scale y
+	mov ax, SYMB2	;symb
+	mov bh, 3h		;scale y
 
 	push ax
 	push bx
 
 	xor ax, ax
 	mov al, bl
-	mov bl, 2h
-	div bl
+	shr ax, 1h
 
-	mov ch, 40d 		;pos x
+	mov ch, WIDTH 		;pos x
+	shr ch, 1h
 	sub ch, al
 
-	mov cl, 0Bh		;pos y
+	mov cl, RECT2_POS		;pos y
 
 	pop bx
 	pop ax
@@ -103,18 +116,18 @@ print proc
 	mov bx, STRING_LENGHT_POS
 	xor cx, cx
 	mov cl, byte ptr [bx]
-	dec cx
+	sub cx, 3
 	
 
 	xor ax, ax
 	mov al, cl
-	mov bl, 2h
-	div bl
+	shr al, 1h
 
-	mov bh, 40d 		;pos x
+	mov bh, WIDTH 		;pos x
+	shr bh, 1h
 	sub bh, al
 
-	mov bl, 0Ch		;pos y
+	mov bl, TEXT_POS		;pos y
 
 	call print_text
 
@@ -145,7 +158,7 @@ print_rect	proc
 	xor bx, bx
 	add al, cl
 
-	add bx, 160d
+	add bx, WIDTH * 2
 	mul bx
 
 	xor bx, bx
@@ -157,9 +170,6 @@ print_rect	proc
 	
 	pop bx
 	pop ax
-
-
-
 
 	xor cx, cx		;cx = y shift
 
@@ -190,14 +200,14 @@ print_rect	proc
 	pop ax
 ja .cycle_x			;x cycle jump 
 	
-	add cx, 160d
+	add cx, WIDTH * 2
 
 	push ax			;comparation
 	push bx
 
 	xor ax, ax
 	add al, bh
-	mov bx, 160d
+	mov bx, WIDTH * 2
 	mul bx
 
 	cmp ax, cx
@@ -233,7 +243,7 @@ print_text 	proc
 	xor cx, cx
 
 	mov al, bl
-	mov cx, 160d
+	mov cx, WIDTH * 2
 	mul cx
 		
 	xor dx, dx
