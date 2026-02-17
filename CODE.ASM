@@ -9,9 +9,7 @@ WIDTH EQU 80d
 SYMB1 EQU 00DBh
 SYMB2 EQU 03DBh
 
-RECT1_POS EQU 0Ah
-RECT2_POS EQU 0Bh
-TEXT_POS EQU 0Ch
+RECT_POS_Y EQU 0Ah
 
 STRING_LENGHT_POS EQU 80h
 STRING_START EQU 82h
@@ -53,19 +51,27 @@ print proc
 	mov ax, VRAMSEG		;move VRAM pos to es
 	mov es, ax	
 	
+	mov di, STRING_LENGHT_POS
+	xor cx, cx		;changed scale
+	mov cl, [di]
+	add di, cx			
+	mov dl, [di]
+	sub dl, '0'
+	mov scale, dl
+
 				;rectangle 1
 
 	mov di, STRING_LENGHT_POS
 	mov bl, [di]
-	add bl, 3h		;scale x
-	mov bh, 5h		;scale y
+	add bl, 1h		;scale x
+	mov bh, scale		;scale y
 
 	mov ax, SYMB1	;symb
 
 	xor cx, cx		;changed color
 	mov cl, [di]
 	add di, cx			
-	mov dl, [di]
+	mov dl, [di - 2]
 	sub dl, '0'
 	mov ah, dl
 
@@ -81,7 +87,7 @@ print proc
 	shr ch, 1h
 	sub ch, al
 
-	mov cl, RECT1_POS		;pos y
+	mov cl, RECT_POS_Y		;pos y
 
 	pop bx
 	pop ax
@@ -91,10 +97,11 @@ print proc
 
 	mov di, STRING_LENGHT_POS
 	mov bl, [di]
-	dec bl			;scale x
+	sub bl, 3			;scale x
 
 	mov ax, SYMB2	;symb
-	mov bh, 3h		;scale y
+	mov bh, scale
+	sub bh, 2		;scale y
 
 	push ax
 	push bx
@@ -107,7 +114,7 @@ print proc
 	shr ch, 1h
 	sub ch, al
 
-	mov cl, RECT2_POS		;pos y
+	mov cl, RECT_POS_Y + 1		;pos y
 
 	pop bx
 	pop ax
@@ -116,11 +123,11 @@ print proc
 
 				;text
 
-	mov si, STRING_START
+	mov si, STRING_START	;color
 	mov bx, STRING_LENGHT_POS
 	xor cx, cx
 	mov cl, byte ptr [bx]
-	sub cx, 3
+	sub cx, 5
 	
 
 	xor ax, ax
@@ -131,7 +138,10 @@ print proc
 	shr bh, 1h
 	sub bh, al
 
-	mov bl, TEXT_POS		;pos y
+	xor bl, bl		;pos y
+	mov bl, scale
+	shr bl, 1h
+	add bl, RECT_POS_Y	
 
 	call print_text
 
@@ -276,7 +286,6 @@ ja .cycle
 		endp
 ;================================================================================
 .data
-
-	
+scale	db 7h
 
 end 	start
