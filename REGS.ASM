@@ -17,41 +17,67 @@ org 100h
 ;===============================================================================
 
 start:
-		call print
-		
 		push 0
 		pop es
 
 		mov bx, 09h * 4
 
-		push es:[bx]
+		mov dx, es:[bx]			;saving old interuptor
+		mov old_inter, dx
+		mov dx, es:[bx + 2]
+		mov old_inter_seg, dx
+
+
 		mov es:[bx], offset inter
 
 		mov ax, cs
-		push es:[bx + 2]
 		mov es:[bx + 2], ax
 
-		push 0b800h
+		mov ax, 3100h
+		mov dx, offset prog_end
+
+		shr dx, 4
+		inc dx
+		int 21h
+
+;===============================================================================
+
+
+
+;===============================================================================
+;	proc restore restores old interuption commander
+;===============================================================================
+restore proc
+		push es
+		push bx
+		push ax
+
+		push 0
 		pop es
 
+		mov bx, 09h * 4
 
-Next:	
+		mov ax, old_inter
+		mov es:[bx], ax
+		mov ax, old_inter_seg
+		mov es:[bx + 2], ax
 
-		jmp Next
+		pop ax
+		pop bx
+		pop es
 
-		call exit
-
-
-
-	
-
+		ret
+endp
 ;===============================================================================
 
 
 
 
+
+
+
 ;===============================================================================
-;	proc inter resolve interuption
+;	proc inter resolve keyboard interuption
 ;===============================================================================
 inter proc
 	push ax bx es
@@ -62,42 +88,31 @@ inter proc
 	mov bx, (5*80d + 40d) * 2
 	mov ah, 4eh
 
-
-
 	in al, 61h
 	or al, 80h
 	out 61h, al
 	and al, not 80h
 	out 61h, al
 
+	mov al, 20h
+	out 20h, al
+
 	in al, 60h
 	mov es:[bx], ax
 
+cmp al, 1h
+jne .skip
+	call print
+	call restore
+
+
+
+.skip:
 	pop es bx ax
 	iret
 
 	endp
-;===============================================================================
 
-
-;===============================================================================
-;	proc exit leave programm
-;===============================================================================
-exit proc
-
-	push 0
-	pop es
-
-	mov bx, 09h * 4
-
-	pop es:[bx + 2]
-	pop es:[bx]
-
-
-	mov ax, EXITCODE
-	int 21h
-
-	endp
 ;===============================================================================
 
 
@@ -155,13 +170,15 @@ print proc
 ;		bh - scale_x
 ;		cl - pos_y
 ;		ch - pos_x
-;destroy	si
+;destroy
 ;====================================================================================
 print_rect	proc
-	push ax			;store symbol offset in di
+	push si
+	push cx
+	push ax			
 	push bx
 					
-	xor ax, ax
+	xor ax, ax		;store symbol offset in di
 	xor bx, bx
 	add al, cl
 
@@ -222,6 +239,10 @@ ja .cycle_x			;x cycle jump
 	pop bx
 	pop ax
 ja .cycle_y
+
+	pop cx
+	pop si
+
 	ret 
 	
 	endp
@@ -235,9 +256,10 @@ ja .cycle_y
 ;		ah - color argument
 ;		cl - pos_y
 ;		ch - pos_x
-;destroy	dx
+;destroy
 ;====================================================================================
 print_symbol	proc
+	push dx
 	push bx
 	push ax			
 					
@@ -260,26 +282,22 @@ print_symbol	proc
 	mov es:[bx], ax 
 
 	pop bx
+	pop dx
 
 	ret
 	endp
 
 	
-
-
-
-
-
-
-	ret 
-	
-	endp
 ;===============================================================================
-
 
 
 ;================================================================================
 .data
-scale	db 7h
+old_inter	dw 'jj'
+old_inter_seg	dw 'ww'
+open	db 0
 
+
+;================================================================================
+prog_end:
 end 	start
