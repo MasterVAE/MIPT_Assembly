@@ -44,37 +44,6 @@ start:
 
 
 
-;===============================================================================
-;	proc restore restores old interuption commander
-;===============================================================================
-restore proc
-		push es
-		push bx
-		push ax
-
-		push 0
-		pop es
-
-		mov bx, 09h * 4
-
-		cli
-		mov ax, old_inter
-		mov es:[bx], ax
-		mov ax, old_inter_seg
-		mov es:[bx + 2], ax
-		sti
-
-		pop ax
-		pop bx
-		pop es
-
-		ret
-endp
-;===============================================================================
-
-
-
-
 
 
 
@@ -87,7 +56,7 @@ inter proc
 	push 0b800h
 	pop es
 
-	mov bx, (5*80d + 40d) * 2
+	mov bx, (1*80d + 78d) * 2
 	mov ah, 4eh
 
 	in al, 61h
@@ -138,8 +107,8 @@ print proc
 
 				;rectangle 1
 
-	mov bl, 5d		;scale x
-	mov bh, 10d		;scale y
+	mov bl, 7d		;scale x
+	mov bh, 11d		;scale y
 
 	mov ax, SYMB1	;symb
 
@@ -151,12 +120,12 @@ print proc
 
 				;rectangle 2
 
-	mov bl, 5d - 2d		;scale x
-	mov bh, 10d - 2d		;scale y
+	mov bl, 7d - 4d		;scale x
+	mov bh, 11d - 2d		;scale y
 
 	mov ax, SYMB2	;symb
 
-	mov ch, RECT_POS_X + 1h		;pos x
+	mov ch, RECT_POS_X + 2h		;pos x
 	mov cl, RECT_POS_Y + 1h		;pos y
 
 	call print_rect
@@ -166,19 +135,19 @@ print proc
 	mov ch, RECT_POS_X + 3h
 
 
-	mov cl, RECT_POS_Y + 3h
+	mov cl, RECT_POS_Y + 2h
 	pop ax
 	call print_symbol
 
-	mov cl, RECT_POS_Y + 5h
+	mov cl, RECT_POS_Y + 4h
 	pop ax
 	call print_symbol
 
-	mov cl, RECT_POS_Y + 7h
+	mov cl, RECT_POS_Y + 6h
 	pop ax
 	call print_symbol
 
-	mov cl, RECT_POS_Y + 9h
+	mov cl, RECT_POS_Y + 8h
 	pop ax
 	call print_symbol
 
