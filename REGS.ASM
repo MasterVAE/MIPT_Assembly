@@ -20,9 +20,9 @@ start:
 		push 0
 		pop es
 
-		mov bx, 09h * 4
+		mov bx, 09h * 4		;keyboard interuption
 
-		mov dx, es:[bx]			;saving old interuptor
+		mov dx, es:[bx]			
 		mov old_inter, dx
 		mov dx, es:[bx + 2]
 		mov old_inter_seg, dx
@@ -33,7 +33,26 @@ start:
 		mov ax, cs
 		mov es:[bx + 2], ax
 
-		mov ax, 3100h
+
+
+
+		mov bx, 08h * 4		;timer interuption
+
+		mov dx, es:[bx]			
+		mov old_timer, dx
+		mov dx, es:[bx + 2]
+		mov old_timer_seg, dx
+
+
+		mov es:[bx], offset timer
+
+		mov ax, cs
+		mov es:[bx + 2], ax
+
+
+
+
+		mov ax, 3100h		;resident mode
 		mov dx, offset prog_end
 
 		shr dx, 4
@@ -73,7 +92,7 @@ inter proc
 
 cmp al, 42d
 jne .skip
-	call print
+	call change
 	
 
 .skip:
@@ -84,7 +103,58 @@ jne .skip
 	pop es bx ax
 	iret
 
-	endp
+change:
+	cmp open, 1
+	je .set_zero
+	jmp .set_one
+
+.set_zero:
+	mov open, 0
+
+	mov ax, 0600h      ;set empty rect on plase of rect
+	mov bh, 07h       
+	mov cx, 0000h      
+	mov dx, 184Fh      
+	int 10h     
+
+	jmp .end
+.set_one:
+	mov open, 1
+
+.end:
+
+ret
+
+endp
+
+
+;===============================================================================
+
+
+
+
+
+
+;===============================================================================
+;	proc timer resolve timer interuption
+;===============================================================================
+timer proc
+	push ax bx cx dx es si di
+	pushf
+
+	cmp open, 1
+	jne .skip_timer
+
+	call print
+
+.skip_timer:
+	
+    call dword ptr cs:[old_inter]
+
+	pop di si es dx cx bx ax
+	iret
+
+endp
 
 ;===============================================================================
 
@@ -292,7 +362,9 @@ endp
 ;================================================================================
 .data
 old_inter	dw 'jj'
-old_inter_seg	dw 'ww'
+old_inter_seg	dw 'jj'
+old_timer	dw 'ww'
+old_timer_seg	dw 'ww'
 open	db 0
 
 
