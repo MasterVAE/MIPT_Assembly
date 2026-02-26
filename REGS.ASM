@@ -57,10 +57,12 @@ restore proc
 
 		mov bx, 09h * 4
 
+		cli
 		mov ax, old_inter
 		mov es:[bx], ax
 		mov ax, old_inter_seg
 		mov es:[bx + 2], ax
+		sti
 
 		pop ax
 		pop bx
@@ -100,14 +102,16 @@ inter proc
 	in al, 60h
 	mov es:[bx], ax
 
-cmp al, 1h
+cmp al, 42d
 jne .skip
 	call print
-	call restore
-
-
+	
 
 .skip:
+
+	pushf
+    call dword ptr cs:[old_inter]
+
 	pop es bx ax
 	iret
 
@@ -122,9 +126,14 @@ jne .skip
 ;	proc print prints rectangles with text
 ;===============================================================================
 print proc
+	push dx
+	push cx
+	push bx
+	push ax
 
-	mov ax, VRAMSEG		;move VRAM pos to es
-	mov es, ax	
+
+	push VRAMSEG		;move VRAM pos to es
+	pop es	
 	
 
 				;rectangle 1
@@ -151,6 +160,27 @@ print proc
 	mov cl, RECT_POS_Y + 1h		;pos y
 
 	call print_rect
+
+				;register printing
+	
+	mov ch, RECT_POS_X + 3h
+
+
+	mov cl, RECT_POS_Y + 3h
+	pop ax
+	call print_symbol
+
+	mov cl, RECT_POS_Y + 5h
+	pop ax
+	call print_symbol
+
+	mov cl, RECT_POS_Y + 7h
+	pop ax
+	call print_symbol
+
+	mov cl, RECT_POS_Y + 9h
+	pop ax
+	call print_symbol
 
 
 	ret
@@ -285,8 +315,7 @@ print_symbol	proc
 	pop dx
 
 	ret
-	endp
-
+endp
 	
 ;===============================================================================
 
