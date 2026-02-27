@@ -2,7 +2,6 @@
 .code
 
 VRAMSEG EQU 0b800h
-EXITCODE EQU 4c00h
 
 WIDTH EQU 80d
 
@@ -12,52 +11,63 @@ SYMB2 EQU 03DBh
 RECT_POS_X EQU 01h
 RECT_POS_Y EQU 01h
 
+RECT_SCALE_X EQU 7d
+RECT_SCALE_Y EQU 11d
+
+KEYBOARD_INTERRUPTION EQU 09h * 4
+TIMER_INTERRUPTION EQU 08h * 4
+
+LSHIFT_SCANCODE EQU 42d
+
+KEYBOARD_SCANCODE_PORT EQU 60h
+KEYBOARD_INFO_PORT EQU 61h
+
 org 100h
 
 ;===============================================================================
 
 start:
-		push 0
-		pop es
+	push 0
+	pop es
 
-		mov bx, 09h * 4		;keyboard interuption
+	mov bx, KEYBOARD_INTERRUPTION		;keyboard interruption
 
-		mov dx, es:[bx]			
-		mov old_inter, dx
-		mov dx, es:[bx + 2]
-		mov old_inter_seg, dx
-
-
-		mov es:[bx], offset inter
-
-		mov ax, cs
-		mov es:[bx + 2], ax
+	mov dx, es:[bx]			
+	mov old_inter, dx
+	mov dx, es:[bx + 2]
+	mov old_inter_seg, dx
 
 
+	mov es:[bx], offset inter
 
-
-		mov bx, 08h * 4		;timer interuption
-
-		mov dx, es:[bx]			
-		mov old_timer, dx
-		mov dx, es:[bx + 2]
-		mov old_timer_seg, dx
-
-
-		mov es:[bx], offset timer
-
-		mov ax, cs
-		mov es:[bx + 2], ax
+	mov ax, cs
+	mov es:[bx + 2], ax
 
 
 
 
-		mov ax, 3100h		;resident mode
-		mov dx, offset prog_end
+	mov bx, TIMER_INTERRUPTION		;timer interruption
 
-		shr dx, 4
-		inc dx
-		int 21h
+	mov dx, es:[bx]			
+	mov old_timer, dx
+	mov dx, es:[bx + 2]
+	mov old_timer_seg, dx
+
+
+	mov es:[bx], offset timer
+
+	mov ax, cs
+	mov es:[bx + 2], ax
+
+
+
+
+	mov ax, 3100h		;resident mode
+	mov dx, offset prog_end
+
+	shr dx, 4
+	inc dx
+	int 21h
 
 ;===============================================================================
 
@@ -72,25 +82,17 @@ start:
 inter proc
 	push ax bx es
 
-	push 0b800h
-	pop es
-
-	mov bx, (1*80d + 78d) * 2
-	mov ah, 4eh
-
-	in al, 61h
+	in al, KEYBOARD_INFO_PORT
 	or al, 80h
-	out 61h, al
+	out KEYBOARD_INFO_PORT, al
 	and al, not 80h
-	out 61h, al
+	out KEYBOARD_INFO_PORT, al
 
 	mov al, 20h
 	out 20h, al
 
-	in al, 60h
-	mov es:[bx], ax
-
-cmp al, 42d
+	in al, KEYBOARD_SCANCODE_PORT
+cmp al, LSHIFT_SCANCODE
 jne .skip
 	call change
 	
@@ -177,8 +179,8 @@ print proc
 
 				;rectangle 1
 
-	mov bl, 7d		;scale x
-	mov bh, 11d		;scale y
+	mov bl, RECT_SCALE_X		;scale x
+	mov bh, RECT_SCALE_Y		;scale y
 
 	mov ax, SYMB1	;symb
 
@@ -190,8 +192,8 @@ print proc
 
 				;rectangle 2
 
-	mov bl, 7d - 4d		;scale x
-	mov bh, 11d - 2d		;scale y
+	mov bl, RECT_SCALE_X - 4d		;scale x
+	mov bh, RECT_SCALE_Y - 2d		;scale y
 
 	mov ax, SYMB2	;symb
 
