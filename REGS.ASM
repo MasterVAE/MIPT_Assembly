@@ -11,7 +11,7 @@ SYMB2 EQU 03DBh
 RECT_POS_X EQU 01h
 RECT_POS_Y EQU 01h
 
-RECT_SCALE_X EQU 7d
+RECT_SCALE_X EQU 22d
 RECT_SCALE_Y EQU 11d
 
 KEYBOARD_INTERRUPTION EQU 09h * 4
@@ -330,6 +330,7 @@ ja .cycle_y
 ;destroy
 ;====================================================================================
 print_symbol	proc
+	push si
 	push dx
 	push bx
 	push ax			
@@ -348,12 +349,39 @@ print_symbol	proc
 
 	mov bx, ax
 
+
 	pop ax
+	push ax
 
-	mov es:[bx], ax 
+	mov ah, 30h
 
+	xor si, si		;si = shift
+
+.cycle_symbol:			;cycle
+
+	mov dx, 0FF01h
+	and dx, ax
+	add dx, '0'
+	mov es:[bx + si], dx
+
+	add si, 2h		;iteration add
+
+	shr al, 1h
+
+	mov dx, 20h
+	cmp dx, si
+
+ja .cycle_symbol		;cycle jump 
+
+
+
+	
+
+	
+	pop ax
 	pop bx
 	pop dx
+	pop si
 
 	ret
 endp
