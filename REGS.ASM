@@ -11,7 +11,7 @@ SYMB2 EQU 03DBh
 RECT_POS_X EQU 01h
 RECT_POS_Y EQU 01h
 
-RECT_SCALE_X EQU 22d
+RECT_SCALE_X EQU 11d
 RECT_SCALE_Y EQU 11d
 
 KEYBOARD_INTERRUPTION EQU 09h * 4
@@ -30,6 +30,7 @@ start:
 	push 0
 	pop es
 
+
 	mov bx, KEYBOARD_INTERRUPTION		;keyboard interruption
 
 	mov dx, es:[bx]			
@@ -38,10 +39,11 @@ start:
 	mov old_inter_seg, dx
 
 
-	mov es:[bx], offset inter
-
 	mov ax, cs
+	cli
+	mov es:[bx], offset inter
 	mov es:[bx + 2], ax
+	sti
 
 
 
@@ -54,10 +56,11 @@ start:
 	mov old_timer_seg, dx
 
 
-	mov es:[bx], offset timer
-
 	mov ax, cs
+	cli
+	mov es:[bx], offset timer
 	mov es:[bx + 2], ax
+	sti
 
 
 
@@ -82,28 +85,18 @@ start:
 inter proc
 	push ax bx es
 
-	in al, KEYBOARD_INFO_PORT
-	or al, 80h
-	out KEYBOARD_INFO_PORT, al
-	and al, not 80h
-	out KEYBOARD_INFO_PORT, al
-
-	mov al, 20h
-	out 20h, al
-
 	in al, KEYBOARD_SCANCODE_PORT
-cmp al, LSHIFT_SCANCODE
-jne .skip
+	cmp al, LSHIFT_SCANCODE
+	jne .skip
 	call change
 	
 
 .skip:
 
-	pushf
-    call dword ptr cs:[old_inter]
-
 	pop es bx ax
-	iret
+	db 0EAh
+		old_inter dw 0
+		old_inter_seg dw 0
 
 change:
 	cmp open, 1
@@ -142,7 +135,6 @@ endp
 ;===============================================================================
 timer proc
 	push ax bx cx dx es si di
-	pushf
 
 	cmp open, 1
 	jne .skip_timer
@@ -150,11 +142,11 @@ timer proc
 	call print
 
 .skip_timer:
-	
-    call dword ptr cs:[old_inter]
-
 	pop di si es dx cx bx ax
-	iret
+	db 0EAh
+		old_timer dw 0
+		old_timer_seg dw 0
+	
 
 endp
 
@@ -167,6 +159,8 @@ endp
 ;	proc print prints rectangles with text
 ;===============================================================================
 print proc
+	push di
+	push si
 	push dx
 	push cx
 	push bx
@@ -211,7 +205,15 @@ print proc
 	pop ax
 	call print_symbol
 
+	mov cl, RECT_POS_Y + 3h
+	pop ax
+	call print_symbol
+
 	mov cl, RECT_POS_Y + 4h
+	pop ax
+	call print_symbol
+
+	mov cl, RECT_POS_Y + 5h
 	pop ax
 	call print_symbol
 
@@ -219,9 +221,13 @@ print proc
 	pop ax
 	call print_symbol
 
-	mov cl, RECT_POS_Y + 8h
+	mov cl, RECT_POS_Y + 7h
 	pop ax
 	call print_symbol
+
+
+
+
 
 
 	ret
@@ -353,22 +359,31 @@ print_symbol	proc
 	pop ax
 	push ax
 
-	mov ah, 30h
 
 	xor si, si		;si = shift
 
 .cycle_symbol:			;cycle
 
-	mov dx, 0FF01h
-	and dx, ax
-	add dx, '0'
+	mov dx, 0300Fh
+	and dl, al
+
+	push cx
+	push bx
+
+	mov bx, offset symbols
+	add bl, dl
+	mov dl, cs:[bx]
+
+	pop bx
+	pop cx
+
 	mov es:[bx + si], dx
 
 	add si, 2h		;iteration add
 
-	shr al, 1h
+	shr ax, 4h
 
-	mov dx, 20h
+	mov dx, 08h
 	cmp dx, si
 
 ja .cycle_symbol		;cycle jump 
@@ -391,11 +406,8 @@ endp
 
 ;================================================================================
 .data
-old_inter	dw 'jj'
-old_inter_seg	dw 'jj'
-old_timer	dw 'ww'
-old_timer_seg	dw 'ww'
 open	db 0
+symbols		db '0123456789ABCDEF$'
 
 
 ;================================================================================
