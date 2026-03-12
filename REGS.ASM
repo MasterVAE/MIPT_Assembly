@@ -11,8 +11,8 @@ SYMB2 EQU 03DBh
 RECT_POS_X EQU 01h
 RECT_POS_Y EQU 01h
 
-RECT_SCALE_X EQU 11d
-RECT_SCALE_Y EQU 11d
+RECT_SCALE_X EQU 13d
+RECT_SCALE_Y EQU 10d
 
 KEYBOARD_INTERRUPTION EQU 09h * 4
 TIMER_INTERRUPTION EQU 08h * 4
@@ -198,32 +198,55 @@ print proc
 
 				;register printing
 	
-	mov ch, RECT_POS_X + 3h
 
-
+	mov ch, RECT_POS_X + 6h
 	mov cl, RECT_POS_Y + 2h
 	pop ax
-	call print_symbol
+	call print_regs
+	mov ch, RECT_POS_X + 3h
+	mov ax, offset name_ax
+	call print_names
 
+	mov ch, RECT_POS_X + 6h
 	mov cl, RECT_POS_Y + 3h
 	pop ax
-	call print_symbol
+	call print_regs
+	mov ch, RECT_POS_X + 3h
+	mov ax, offset name_bx
+	call print_names
 
+	mov ch, RECT_POS_X + 6h
 	mov cl, RECT_POS_Y + 4h
 	pop ax
-	call print_symbol
+	call print_regs
+	mov ch, RECT_POS_X + 3h
+	mov ax, offset name_cx
+	call print_names
 
+	mov ch, RECT_POS_X + 6h
 	mov cl, RECT_POS_Y + 5h
 	pop ax
-	call print_symbol
+	call print_regs
+	mov ch, RECT_POS_X + 3h
+	mov ax, offset name_dx
+	call print_names
 
+	mov ch, RECT_POS_X + 6h
 	mov cl, RECT_POS_Y + 6h
 	pop ax
-	call print_symbol
+	call print_regs
+	mov ch, RECT_POS_X + 3h
+	mov ax, offset name_si
+	call print_names
 
+
+	mov ch, RECT_POS_X + 6h
 	mov cl, RECT_POS_Y + 7h
 	pop ax
-	call print_symbol
+	call print_regs
+	mov ch, RECT_POS_X + 3h
+	mov ax, offset name_di
+	call print_names
 
 
 
@@ -328,14 +351,14 @@ ja .cycle_y
 
 
 ;====================================================================================
-;proc print_symbol
+;proc print_regs
 ;enter		al - char
 ;		ah - color argument
 ;		cl - pos_y
 ;		ch - pos_x
 ;destroy
 ;====================================================================================
-print_symbol	proc
+print_regs	proc
 	push si
 	push dx
 	push bx
@@ -404,10 +427,86 @@ endp
 ;===============================================================================
 
 
+
+
+;====================================================================================
+;proc print_names
+;enter
+;		ax - string start
+;		cl - pos_y
+;		ch - pos_x
+;destroy
+;====================================================================================
+print_names	proc
+	push dx
+	push si
+	push bx
+	push ax
+					
+	xor ax, ax
+	xor bx, bx
+	add al, cl
+
+	add bx, WIDTH * 2
+	mul bx
+
+	xor dx, dx
+	add dl, ch
+	add ax, dx
+	add ax, dx
+
+	pop bx
+	push bx
+
+	xor si, si		;si = shift
+
+.cycle_name:			;cycle
+
+	mov dh, 30h
+	mov dl, cs:[bx + si]
+
+	push bx
+
+	mov bx, ax
+	mov di, si
+	shl di, 1h
+	mov es:[bx + di], dx
+
+	pop bx
+
+	inc si	;iteration add
+
+	mov dx, 03h
+	cmp dx, si
+
+ja .cycle_name		;cycle jump 
+
+
+	pop ax
+	pop bx
+	pop si
+	pop dx
+
+	ret
+endp
+	
+;===============================================================================
+
+
+
+
+
 ;================================================================================
 .data
 open	db 0
 symbols		db '0123456789ABCDEF$'
+name_ax db 'AX:$'
+name_bx db 'BX:$'
+name_cx db 'CX:$'
+name_dx db 'DX:$'
+name_si db 'SI:$'
+name_di db 'DI:$'
+name_bp db 'BP:$'
 
 
 ;================================================================================
